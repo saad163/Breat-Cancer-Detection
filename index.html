@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breast Cancer Mammogram Classifier</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 400px;
+            transition: transform 0.3s ease-in-out;
+            margin-bottom: 20px;
+        }
+
+        .container:hover {
+            transform: scale(1.05);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"], input[type="text"] {
+            margin: 10px 0;
+            padding: 12px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            width: 100%;
+            transition: 0.3s;
+        }
+
+        input[type="file"]:hover, input[type="text"]:hover {
+            border-color: #0056b3;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .result-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 25px;
+            width: 80%;
+        }
+
+        .result {
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            text-align: center;
+            margin-right: 20px;
+        }
+
+        .result h2 {
+            color: #28a745;
+            font-size: 20px;
+        }
+
+        .result img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+
+        .report {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: left;
+            display: none;
+        }
+
+        .report h2 {
+            color: #333;
+        }
+
+        .report p {
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        .report-btn {
+            margin-top: 20px;
+            background: #28a745;
+        }
+
+        .report-btn:hover {
+            background: #218838;
+        }
+
+        .download-btn {
+            background: #dc3545;
+            margin-top: 10px;
+        }
+
+        .download-btn:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Breast Cancer Mammogram Classification</h1>
+        <form action="/" method="post" enctype="multipart/form-data">
+            <input type="text" id="patient_name" name="patient_name" placeholder="Enter Patient Name" required>
+            <input type="file" name="file" required>
+            <button type="submit">Upload & Predict</button>
+        </form>
+    </div>
+    
+    {% if filename %}
+    <div class="result-container">
+        <div class="result">
+            <h2>Result: {{ result }}</h2>
+            <p><strong>Uploaded Image:</strong></p>
+            <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Uploaded Image">
+            
+            <p><strong>Processed Image:</strong></p>
+            <img src="{{ url_for('static', filename='processed/' + filename) }}" alt="Processed Mammogram">
+        
+            <button class="report-btn" onclick="generateReport('{{ patient_name }}')">Generate Report</button>
+        </div>
+        
+        
+        <div class="report" id="report">
+            <h2>Breast Cancer Medical Report</h2>
+            <p><strong>Patient Name:</strong> <span id="report_name">{{ patient_name }}</span></p>
+            <p><strong>Date:</strong> <span id="report_date">{{ report_date }}</span></p>
+            <p><strong>Diagnosis:</strong> <span id="diagnosis">{{ result }}</span></p>
+            <p><strong>Comments:</strong> <span id="comments">{{ Comments }}</span></p>
+            <button class="download-btn" onclick="downloadPDF()">Download Report as PDF</button>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <script>
+        function generateReport(patientName) {
+            document.getElementById("report").style.display = "block";
+            if (!patientName) {
+                patientName = document.getElementById("patient_name").value;
+            }
+            document.getElementById("report_name").innerText = patientName;
+            document.getElementById("report_date").innerText = new Date().toLocaleDateString();
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+        
+            // Values fetch karo from HTML
+            let patientName = document.getElementById("report_name").innerText;
+            let reportDate = document.getElementById("report_date").innerText;
+            let diagnosis = document.getElementById("diagnosis").innerText;
+            let comments = document.getElementById("comments").innerText;
+        
+            // Title
+            doc.setFontSize(22);
+            doc.text("Breast Cancer Mammogram Classification Report", 20, 20);
+        
+            // Patient Info
+            doc.setFontSize(16);
+            doc.text(`Patient Name: ${patientName}`, 20, 40);
+            doc.text(`Date: ${reportDate}`, 20, 50);
+            doc.text(`Diagnosis: ${diagnosis}`, 20, 60);
+        
+            // Comments ko wrap karo taake cut na ho
+            doc.setFontSize(14);
+            doc.text("Comments:", 20, 80);
+            let splitComments = doc.splitTextToSize(comments, 170);  // 170 max width 
+            doc.text(splitComments, 20, 90); 
+        
+            // Agar comments lamba hai, toh new page add karo
+            if (splitComments.length > 6) {  
+                doc.addPage();
+                doc.text("Continued Comments:", 20, 20);
+                doc.text(splitComments.slice(6), 20, 30); 
+            }
+        
+            // Save PDF
+            doc.save(`Medical_Report_${patientName}.pdf`);
+        }                
+    </script>
+</body>
+</html>
